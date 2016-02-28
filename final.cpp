@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <iterator>
+#include <unistd.h>
 
 #include "http_server.hpp"
 
@@ -45,6 +46,11 @@ int main(int ac, char* av[]) {
     unsigned short port;
 
     po::variables_map vm = getArgs(ac, av, &host, &port, &directory);
-    HttpServer server(host, port, directory);
-    server.start();
+
+    if (!fork()) {
+        HttpServer server(host, port, directory);
+        server.start();
+    }
+
+    return 0;
 }
