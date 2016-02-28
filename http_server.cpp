@@ -1,6 +1,7 @@
 #pragma once
 #include "http_server.hpp"
 #include <iostream>
+#include <exception>
 
 #include <boost/asio.hpp>
 #include <boost/asio/read_until.hpp>
@@ -47,30 +48,39 @@ void HttpServer::readHandler(Client* client, const boost::system::error_code & e
         return;
     }
 
-    string file;
-    std::istream request_is(&client->buff_);
-    request_is >> file >> file;
-    if (file == "/") file = "index.html";
-    file = directory_ + file;
-    cerr << file << endl;
+    try {
+        string file;
+        std::istream request_is(&client->buff_);
+        request_is >> file >> file;
+        if (file == "/") file = "index.html";
+        file = directory_ + file;
+        if (file.find_first_of("?") != string::npos) {
+            file.erase(file.find_first_of("?"));
+        }
+        
+        cerr << file << endl;
 
-    ifstream result(file);
-    std::string text;
-    if (!result || !result.is_open()) {
-        text = "HTTP/1.0 404 FAIL";
-        write(client->sock_, buffer(text));
-        client->sock_.close();
-    } else {
-        text = std::string((std::istreambuf_iterator<char>(result)),
-                            std::istreambuf_iterator<char>());
+        ifstream result(file);
+        std::string text;
+        cerr << file << endl;
+        if (!result || !result.is_open()) {
+            text = "HTTP/1.0 404 FAIL";
+            write(client->sock_, buffer(text));
+            client->sock_.close();
+        } else {
+            text = std::string((std::istreambuf_iterator<char>(result)),
+                                std::istreambuf_iterator<char>());
 
-        text = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + 
-               std::to_string(text.size()) + 
-               "\r\n\r\n" + text;
+            text = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + 
+                   std::to_string(text.size()) + 
+                   "\r\n\r\n" + text;
 
-        async_write(client->sock_, buffer(text), [](boost::system::error_code, std::size_t){});
+            async_write(client->sock_, buffer(text), [](boost::system::error_code, std::size_t){});
+        }
+        cerr << text << endl;
+    } catch (exception& e) {
+        cerr << e.what() << endl;
     }
-    cerr << text << endl;
 
     //std::cerr << &client->buff_;
     //async_read_until(client->sock_, client->buff_, "\r\n", std::bind(&HttpServer::readHandler, this, client, _1, _2));
