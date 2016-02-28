@@ -3,10 +3,11 @@ project(final)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pedantic -Wall -Wextra -Wno-unused-result -Wformat=2 -Wfloat-equal -Wconversion -Wlogical-op -DDEBUG -D_FORTIFY_SOURCE=2 -fsanitize=address -g")
 
-FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
+FIND_PACKAGE(Boost COMPONENTS program_options system REQUIRED)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
-SET(SOURCE_FILES final.cpp)
+SET(SOURCE_FILES final.cpp
+                 http_server.cpp)
 
 #set(dir "${CMAKE_CURRENT_SOURCE_DIR}/build")
 

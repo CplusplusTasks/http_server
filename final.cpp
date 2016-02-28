@@ -2,17 +2,20 @@
 
 #include <iostream>
 #include <iterator>
+
+#include "http_server.hpp"
+
 using namespace std;
 namespace po = boost::program_options;
 
 // -h <ip> -p <port> -d <directory> 
-po::variables_map getArgs(int ac, char* av[], string *host, int *port, string *directory) {
+po::variables_map getArgs(int ac, char* av[], string *host, unsigned short *port, string *directory) {
     try {
         po::options_description desc("Allowed options");
         desc.add_options()
             ("help", "produce help message")
             (",h", po::value<string>(host)->required(), "host ip")
-            (",p", po::value<int>(port)->required(), "port")
+            (",p", po::value<unsigned short>(port)->required(), "port")
             (",d", po::value<string>(directory)->required(), "working directory")
         ;
 
@@ -39,7 +42,7 @@ po::variables_map getArgs(int ac, char* av[], string *host, int *port, string *d
 int main(int ac, char* av[]) {
     string host;
     string directory;
-    int port;
+    unsigned short port;
 
     po::variables_map vm = getArgs(ac, av, &host, &port, &directory);
     HttpServer(host, port, directory).start();
