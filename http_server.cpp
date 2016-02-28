@@ -60,15 +60,13 @@ void HttpServer::readHandler(Client* client, const boost::system::error_code & e
         }
         log_ << "req2: " << file << endl;
         
-        log_ << file << endl;
+        log_ << "file: " << file << endl;
 
         ifstream result(file);
         std::string text;
-        log_ << file << endl;
         if (!result || !result.is_open()) {
-            text = "HTTP/1.0 404 FAIL";
+            text = "HTTP/1.0 404 FAIL\r\n\r\n";
             write(client->sock_, buffer(text));
-            client->sock_.close();
         } else {
             text = std::string((std::istreambuf_iterator<char>(result)),
                                 std::istreambuf_iterator<char>());
@@ -79,9 +77,9 @@ void HttpServer::readHandler(Client* client, const boost::system::error_code & e
 
             async_write(client->sock_, buffer(text), [](boost::system::error_code, std::size_t){});
         }
-        log_ << text << endl;
+        log_ << "text: " << text << endl;
     } catch (exception& e) {
-        log_ << e.what() << endl;
+        log_ << "exc: 83: " << e.what() << endl;
     }
 
     //std::log_ << &client->buff_;
