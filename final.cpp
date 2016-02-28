@@ -40,6 +40,7 @@ po::variables_map getArgs(int ac, char* av[], string *host, unsigned short *port
     }
 }
 
+// getopt
 int main(int ac, char* av[]) {
     string host;
     string directory;
