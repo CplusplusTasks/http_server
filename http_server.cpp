@@ -3,12 +3,7 @@
 #include <iostream>
 
 #include <boost/asio.hpp>
-#include <boost/aligned_storage.hpp>
-#include <boost/array.hpp>
-#include <boost/bind.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/asio/read_until.hpp>
 
 namespace ip = boost::asio::ip;
 
@@ -41,6 +36,57 @@ void HttpServer::run() {
     }
 }
 
+void HttpServer::readHandler(Client* client, const boost::system::error_code & err, std::size_t read_bytes) {
+    using namespace boost::asio;
+    using std::placeholders::_1;
+    using std::placeholders::_2;
+
+    using namespace std;
+    if (err) {
+        cerr << "error:" << err.message() << endl;
+        return;
+    }
+
+    string file;
+    std::istream request_is(&client->buff_);
+    request_is >> file >> file;
+    if (file == "/") file = "index.html";
+    file = directory_ + file;
+    cerr << file << endl;
+
+    ifstream result(file);
+    std::string text;
+    if (!result || !result.is_open()) {
+        text = "HTTP/1.0 404 FAIL";
+        write(client->sock_, buffer(text));
+        client->sock_.close();
+    } else {
+        text = std::string((std::istreambuf_iterator<char>(result)),
+                            std::istreambuf_iterator<char>());
+
+        text = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + 
+               std::to_string(text.size()) + 
+               "\r\n\r\n" + text;
+
+        async_write(client->sock_, buffer(text), [](boost::system::error_code, std::size_t){});
+    }
+    cerr << text << endl;
+
+    //std::cerr << &client->buff_;
+    //async_read_until(client->sock_, client->buff_, "\r\n", std::bind(&HttpServer::readHandler, this, client, _1, _2));
+}
+
+void HttpServer::acceptHandler(Client* client, const boost::system::error_code & err) {
+    using namespace boost::asio;
+    using std::placeholders::_1;
+    using std::placeholders::_2;
+
+    async_read_until(client->sock_, client->buff_, "\r\n", std::bind(&HttpServer::readHandler, this, client, _1, _2));
+    
+    clients_.emplace_back(io_service_);
+    acceptor_.async_accept(clients_.back().sock_, std::bind(&HttpServer::acceptHandler, this, &clients_.back(), _1));
+}
+
 void HttpServer::start() {
     try {
         for (int i = 0; i < THREADS_COUNT; ++i) {
@@ -48,20 +94,11 @@ void HttpServer::start() {
             log_ << "start worker #" << threads_[i].get_id() << "\n";
         }
 
-        while (true) {
-            clients_.push_back(Client(io_service_));
-            acceptor_.accept(clients_.back().sock_);
-            log_ << "accept: " << clients_.back().sock_.remote_endpoint().port() << std::endl;
-            //{
-                //std::unique_lock<std::mutex> lg(m_);
-                //cv_.notify_one();
-            //}
-        }
-        //acceptor_.async_accept(new_session->socket(),
-            //boost::bind(&server::handle_accept, this, new_session,
-              //boost::asio::placeholders::error));
+        using std::placeholders::_1;
+        clients_.emplace_back(io_service_);
+        acceptor_.async_accept(clients_.back().sock_, std::bind(&HttpServer::acceptHandler, this, &clients_.back(), _1));
 
-        //io_service_.run();
+        io_service_.run();
     } catch (std::exception& e) {
         std::cerr << "Exception: " << e.what() << "\n";
     }

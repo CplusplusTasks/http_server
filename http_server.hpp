@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <vector>
+#include <list>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -22,11 +22,15 @@ private:
         Client(boost::asio::io_service& io_service);
 
         boost::asio::ip::tcp::socket sock_;
-        char buff[1024];
+        boost::asio::streambuf buff_;
     };
 
 private:
     void run();
+
+    void acceptHandler(Client* client, const boost::system::error_code & err);
+
+    void readHandler(Client* client, const boost::system::error_code & err, std::size_t read_bytes);
 
 private:
     enum { THREADS_COUNT = 3 };
@@ -42,7 +46,7 @@ private:
     std::mutex m_;
     std::condition_variable cv_;
 
-    std::vector<Client> clients_;
+    std::list<Client> clients_;
     std::queue<std::function<void()>> q_;
 
     std::ofstream log_;

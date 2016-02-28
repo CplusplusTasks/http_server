@@ -45,5 +45,6 @@ int main(int ac, char* av[]) {
     unsigned short port;
 
     po::variables_map vm = getArgs(ac, av, &host, &port, &directory);
-    HttpServer(host, port, directory).start();
+    HttpServer server(host, port, directory);
+    server.start();
 }
