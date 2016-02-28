@@ -44,7 +44,7 @@ void HttpServer::readHandler(Client* client, const boost::system::error_code & e
 
     using namespace std;
     if (err) {
-        cerr << "error:" << err.message() << endl;
+        log_ << "error:" << err.message() << endl;
         return;
     }
 
@@ -54,15 +54,17 @@ void HttpServer::readHandler(Client* client, const boost::system::error_code & e
         request_is >> file >> file;
         if (file == "/") file = "index.html";
         file = directory_ + file;
+        log_ << "req: " << file << endl;
         if (file.find_first_of("?") != string::npos) {
             file.erase(file.find_first_of("?"));
         }
+        log_ << "req2: " << file << endl;
         
-        cerr << file << endl;
+        log_ << file << endl;
 
         ifstream result(file);
         std::string text;
-        cerr << file << endl;
+        log_ << file << endl;
         if (!result || !result.is_open()) {
             text = "HTTP/1.0 404 FAIL";
             write(client->sock_, buffer(text));
@@ -77,12 +79,12 @@ void HttpServer::readHandler(Client* client, const boost::system::error_code & e
 
             async_write(client->sock_, buffer(text), [](boost::system::error_code, std::size_t){});
         }
-        cerr << text << endl;
+        log_ << text << endl;
     } catch (exception& e) {
-        cerr << e.what() << endl;
+        log_ << e.what() << endl;
     }
 
-    //std::cerr << &client->buff_;
+    //std::log_ << &client->buff_;
     //async_read_until(client->sock_, client->buff_, "\r\n", std::bind(&HttpServer::readHandler, this, client, _1, _2));
 }
 
