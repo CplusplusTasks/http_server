@@ -51,39 +51,26 @@ void HttpServer::readHandler(Client *client, const boost::system::error_code &er
         string file;
         std::istream request_is(&client->buff_);
         request_is >> file >> file;
-//        if (file == "/") file = "index.html";
         file = directory_ + file;
-        log_ << "req: " << file << endl;
-        if (file.find_first_of("?") != string::npos) {
+        if (file.find_first_of("?") != string::npos)
             file.erase(file.find_first_of("?"));
-        }
-        log_ << "req2: " << file << endl;
-
-        log_ << "file: " << file << endl;
-
-        log_ << "her" << endl;
         std::string text;
-        bool flag;
-        {
-            boost::filesystem::path path(file);
-            flag = !exists(path) || is_directory(path);
-        }
-        if (flag) {
-            log_ << "!boost" << endl;
+        boost::filesystem::path path(file);
+        if (!exists(path) || is_directory(path)) {
             text = "HTTP/1.0 404 FAIL\r\nContent-Length:0\r\n\r\n";
             write(client->sock_, buffer(text));
         } else {
-            log_ << "boost" << endl;
             ifstream result(file);
             text = std::string((std::istreambuf_iterator<char>(result)),
                                std::istreambuf_iterator<char>());
-            log_ << "her2" << endl;
 
             text = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: " +
                    std::to_string(text.size()) +
                    "\r\n\r\n" + text;
 
             async_write(client->sock_, buffer(text), [](boost::system::error_code, std::size_t) { });
+
+            async_read_until(client->sock_, client->buff_, "\r\n", std::bind(&HttpServer::readHandler, this, client, _1, _2));
         }
         log_ << "text: " << text << endl;
     } catch (exception &e) {
@@ -92,7 +79,6 @@ void HttpServer::readHandler(Client *client, const boost::system::error_code &er
     }
 
     //std::log_ << &client->buff_;
-    //async_read_until(client->sock_, client->buff_, "\r\n", std::bind(&HttpServer::readHandler, this, client, _1, _2));
 }
 
 void HttpServer::acceptHandler(Client *client, const boost::system::error_code &err) {
