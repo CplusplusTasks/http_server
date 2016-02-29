@@ -13,7 +13,7 @@ namespace ip = boost::asio::ip;
 HttpServer::HttpServer(const std::string &host, unsigned short port, const std::string &directory)
         : host_(host), port_(port), directory_(directory),
           acceptor_(io_service_, ip::tcp::endpoint(ip::address::from_string(host), port)),
-          log_("/home/eugene/university/3 course/stepic/multithreading_c++/http_server/log") {
+          log_("log") {
     acceptor_.set_option(ip::tcp::socket::reuse_address(true));
 }
 
