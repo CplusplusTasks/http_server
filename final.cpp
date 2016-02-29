@@ -48,10 +48,10 @@ int main(int ac, char* av[]) {
 
     po::variables_map vm = getArgs(ac, av, &host, &port, &directory);
 
-    if (!fork()) {
-        HttpServer server(host, port, directory);
-        server.start();
-    }
+//    if (!fork()) {
+    HttpServer server(host, port, directory);
+    server.start();
+//    }
 
     return 0;
 }

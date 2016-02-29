@@ -5,6 +5,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/read_until.hpp>
+#include <boost/filesystem.hpp>
 
 namespace ip = boost::asio::ip;
 
@@ -13,7 +14,7 @@ HttpServer::HttpServer(const std::string& host, unsigned short port, const std::
     , port_(port)
     , directory_(directory)
     , acceptor_(io_service_, ip::tcp::endpoint(ip::address::from_string(host), port))
-    , log_("log")
+    , log_("/home/eugene/university/3 course/stepic/multithreading_c++/http_server/log")
 {
     acceptor_.set_option(ip::tcp::socket::reuse_address(true));
 }
@@ -52,7 +53,7 @@ void HttpServer::readHandler(Client* client, const boost::system::error_code & e
         string file;
         std::istream request_is(&client->buff_);
         request_is >> file >> file;
-        if (file == "/") file = "index.html";
+//        if (file == "/") file = "index.html";
         file = directory_ + file;
         log_ << "req: " << file << endl;
         if (file.find_first_of("?") != string::npos) {
@@ -62,14 +63,19 @@ void HttpServer::readHandler(Client* client, const boost::system::error_code & e
         
         log_ << "file: " << file << endl;
 
-        ifstream result(file);
+        log_ << "her" << endl;
         std::string text;
-        if (!result || !result.is_open()) {
-            text = "HTTP/1.0 404 FAIL\r\n\r\n";
+        boost::filesystem::path path(file);
+        if (!exists(path) || is_directory(path)) {
+            log_ << "!boost" << endl;
+            text = "HTTP/1.0 404 FAIL\r\nContent-Length:0\r\n\r\n";
             write(client->sock_, buffer(text));
         } else {
+            log_ << "boost" << endl;
+            ifstream result(file);
             text = std::string((std::istreambuf_iterator<char>(result)),
                                 std::istreambuf_iterator<char>());
+            log_ << "her2" << endl;
 
             text = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + 
                    std::to_string(text.size()) + 
@@ -80,6 +86,7 @@ void HttpServer::readHandler(Client* client, const boost::system::error_code & e
         log_ << "text: " << text << endl;
     } catch (exception& e) {
         log_ << "exc: 83: " << e.what() << endl;
+        write(client->sock_, buffer("HTTP/1.0 404 FAIL\r\n\r\n"));
     }
 
     //std::log_ << &client->buff_;
